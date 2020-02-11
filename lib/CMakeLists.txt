@@ -1,18 +1,21 @@
 set(HEADER_FILES
-        include/app/session.h
-        include/app/common.h
-        include/app/thread.h
-        include/app/base64.h)
+        include/ps4app/session.h
+        include/ps4app/common.h
+        include/ps4app/thread.h
+        include/ps4app/base64.h
+        include/ps4app/http.h)
 
 set(SOURCE_FILES
+        src/common.c
         src/session.c
         src/thread.c
-        src/base64.c)
+        src/base64.c
+        src/http.c)
 
-add_library(app-lib ${HEADER_FILES} ${SOURCE_FILES})
-set_target_properties(app-lib PROPERTIES OUTPUT_NAME app)
+add_library(ps4app-lib ${HEADER_FILES} ${SOURCE_FILES})
+set_target_properties(ps4app-lib PROPERTIES OUTPUT_NAME ps4app)
 
-target_include_directories(app-lib PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_include_directories(ps4app-lib PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
 find_package(Threads)
-target_link_libraries(app-lib Threads::Threads)
+target_link_libraries(ps4app-lib Threads::Threads)

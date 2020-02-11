@@ -1,4 +1,4 @@
-#include <app/base64.h>
+#include <ps4app/base64.h>
 
 #include <stdint.h>
 
@@ -22,7 +22,7 @@ static const unsigned char d[] = {
 	66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66,
 	66, 66, 66, 66, 66, 66};
 
-APP_EXPORT bool app_base64_decode(const char *in, size_t in_size, uint8_t *out, size_t *out_size)
+PS4APP_EXPORT bool ps4app_base64_decode(const char *in, size_t in_size, uint8_t *out, size_t *out_size)
 {
 	const char *end = in + in_size;
 	char iter = 0;
