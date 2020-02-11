@@ -22,7 +22,7 @@ static const unsigned char d[] = {
 	66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66,
 	66, 66, 66, 66, 66, 66};
 
-PS4APP_EXPORT bool ps4app_base64_decode(const char *in, size_t in_size, uint8_t *out, size_t *out_size)
+PS4APP_EXPORT Ps4AppErrorCode ps4app_base64_decode(const char *in, size_t in_size, uint8_t *out, size_t *out_size)
 {
 	const char *end = in + in_size;
 	char iter = 0;
@@ -38,7 +38,7 @@ PS4APP_EXPORT bool ps4app_base64_decode(const char *in, size_t in_size, uint8_t 
 		case WHITESPACE:
 			continue; // skip whitespace
 		case INVALID:
-			return false; // invalid input
+			return PS4APP_ERR_INVALID_DATA;  // invalid input
 		case EQUALS:	  // pad character, end of data
 			in = end;
 			continue;
@@ -49,7 +49,7 @@ PS4APP_EXPORT bool ps4app_base64_decode(const char *in, size_t in_size, uint8_t 
 			if (iter == 4)
 			{
 				if ((len += 3) > *out_size)
-					return false; // buffer overflow
+					return PS4APP_ERR_BUF_TOO_SMALL; // buffer overflow
 				*(out++) = (unsigned char)((buf >> 16) & 0xff);
 				*(out++) = (unsigned char)((buf >> 8) & 0xff);
 				*(out++) = (unsigned char)(buf & 0xff);
@@ -62,17 +62,17 @@ PS4APP_EXPORT bool ps4app_base64_decode(const char *in, size_t in_size, uint8_t 
 	if (iter == 3)
 	{
 		if ((len += 2) > *out_size)
-			return false; // buffer overflow
+			return PS4APP_ERR_BUF_TOO_SMALL; // buffer overflow
 		*(out++) = (unsigned char)((buf >> 10) & 0xff);
 		*(out++) = (unsigned char)((buf >> 2) & 0xff);
 	}
 	else if (iter == 2)
 	{
 		if (++len > *out_size)
-			return 1; // buffer overflow
+			return PS4APP_ERR_BUF_TOO_SMALL; // buffer overflow
 		*(out++) = (unsigned char)((buf >> 4) & 0xff);
 	}
 
 	*out_size = len;
-	return true;
+	return PS4APP_ERR_SUCCESS;
 }

@@ -11,7 +11,7 @@
 extern "C" {
 #endif
 
-PS4APP_EXPORT bool ps4app_base64_decode(const char *in, size_t in_size, uint8_t *out, size_t *out_size);
+PS4APP_EXPORT Ps4AppErrorCode ps4app_base64_decode(const char *in, size_t in_size, uint8_t *out, size_t *out_size);
 
 #ifdef __cplusplus
 }

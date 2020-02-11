@@ -32,10 +32,10 @@ int main(int argc, const char *argv[])
 		return 1;
 	}
 
-	ChiakiSession session;
+	Ps4AppSession session;
 	ps4app_session_init(&session, &connect_info);
 	ps4app_session_start(&session);
 	ps4app_session_join(&session);
-	ps4app_session_fini(&session);
+	ps4app_session_finish(&session);
 	return 0;
 }

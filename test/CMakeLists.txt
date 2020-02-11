@@ -8,6 +8,6 @@ add_executable(ps4app-unit
 
 
 
-target_link_libraries(ps4app-unit ps4app-lib munit ws2_32)
+target_link_libraries(ps4app-unit ps4app-lib  ws2_32 munit)
 
 add_test(unit chiaki-unit)
