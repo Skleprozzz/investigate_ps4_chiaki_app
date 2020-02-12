@@ -3,14 +3,16 @@ set(HEADER_FILES
         include/ps4app/common.h
         include/ps4app/thread.h
         include/ps4app/base64.h
-        include/ps4app/http.h)
+        include/ps4app/http.h
+        include/ps4app/log.h)
 
 set(SOURCE_FILES
         src/common.c
         src/session.c
         src/thread.c
         src/base64.c
-        src/http.c)
+        src/http.c
+        src/log.c)
 
 add_library(ps4app-lib ${HEADER_FILES} ${SOURCE_FILES})
 set_target_properties(ps4app-lib PROPERTIES OUTPUT_NAME ps4app)
