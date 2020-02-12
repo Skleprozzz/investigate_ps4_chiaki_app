@@ -137,7 +137,6 @@ static void parse_session_response(SessionResponse *response, Ps4AppHttpResponse
 static bool session_thread_request_session(Ps4AppSession *session)
 {
 	int session_sock = -1;
-	char host_buf[128];
 	for (struct addrinfo *ai = session->connect_info.host_addrinfos; ai; ai = ai->ai_next)
 	{
 		if (ai->ai_protocol != IPPROTO_TCP)
@@ -158,12 +157,14 @@ static bool session_thread_request_session(Ps4AppSession *session)
 			continue;
 		}
 
-		int r = getnameinfo(sa, ai->ai_addrlen, host_buf, sizeof(host_buf), NULL, 0, 0);
+		int r = getnameinfo(sa, ai->ai_addrlen, session->connect_info.hostname, sizeof(session->connect_info.hostname), NULL, 0, 0);
 		if (r != 0)
 		{
 			free(sa);
 			continue;
 		}
+
+		PS4APP_LOGI(&session->log, "Trying to request session from %s:%d\n", session->connect_info.hostname, SESSION_PORT);
 
 		session_sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
 		if (session_sock < 0)
@@ -194,7 +195,7 @@ static bool session_thread_request_session(Ps4AppSession *session)
 		return false;
 	}
 
-	printf("Connected to %s:%u\n", host_buf, SESSION_PORT);
+	PS4APP_LOGI(&session->log, "Connected to %s:%d\n", session->connect_info.hostname, SESSION_PORT);
 
 	static const char session_request_fmt[] =
 		"GET /sce/rp/session HTTP/1.1\r\n"
@@ -208,7 +209,7 @@ static bool session_thread_request_session(Ps4AppSession *session)
 
 	char buf[512];
 	int request_len = snprintf(buf, sizeof(buf), session_request_fmt,
-							   host_buf, SESSION_PORT, session->connect_info.regist_key);
+							   session->connect_info.hostname, SESSION_PORT, session->connect_info.regist_key);
 	if (request_len < 0 || request_len >= sizeof(buf))
 	{
 		close(session_sock);

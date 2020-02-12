@@ -2,21 +2,22 @@
 #include <ps4app/http.h>
 #include <stdio.h>
 
-
 static const char *response = "HTTP/1.1 200 OK\r\n"
                               "Content-type: text/html, text, plain\r\n"
                               "Ultimate Ability: Gamer\r\n"
                               "\r\n";
 
 static void *test_http_response_parse_setup(const MunitParameter params[],
-                                            void *user) {
+                                            void *user)
+{
   return strdup(response);
 }
 
 static void test_http_response_parse_teardown(void *fixture) { free(fixture); }
 
 static MunitResult test_http_response_parse(const MunitParameter params[],
-                                            void *fixture) {
+                                            void *fixture)
+{
   char *buf = fixture;
   Ps4AppHttpResponse parsed_response;
   Ps4AppErrorCode err =
@@ -37,7 +38,7 @@ static MunitResult test_http_response_parse(const MunitParameter params[],
   header = header->next;
   munit_assert_ptr_null(header);
 
-  ps4app_session_finish(&parsed_response);
+  ps4app_http_reponse_finish(&parsed_response);
   return MUNIT_OK;
 }
 

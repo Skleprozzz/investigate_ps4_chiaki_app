@@ -4,9 +4,10 @@
 #include "common.h"
 #include "thread.h"
 #include "log.h"
+#include "ctrl.h"
 
-#include <Ws2tcpip.h>
 #include <stdint.h>
+#include <Ws2tcpip.h>
 #include <winsock.h>
 
 #ifdef __cplusplus
@@ -25,10 +26,12 @@ extern "C"
   typedef enum
   {
     PS4APP_QUIT_REASON_NONE,
-    PS4APP_QUIT_REASON_SESSION_REQUEST_CONNECTION_REFUSED,
     PS4APP_QUIT_REASON_SESSION_REQUEST_UNKNOWN,
+    PS4APP_QUIT_REASON_SESSION_REQUEST_CONNECTION_REFUSED,
     PS4APP_QUIT_REASON_SESSION_REQUEST_RP_IN_USE,
-    PS4APP_QUIT_REASON_SESSION_REQUEST_RP_CRASH
+    PS4APP_QUIT_REASON_SESSION_REQUEST_RP_CRASH,
+    PS4APP_QUIT_REASON_CTRL_UNKNOWN,
+    PS4APP_QUIT_REASON_CTRL_CONNECTION_REFUSED
   } Ps4AppQuitReason;
 
   typedef struct ps4app_quit_event_t
@@ -59,6 +62,7 @@ extern "C"
     {
       struct addrinfo *host_addrinfos;
       struct addrinfo *host_addrinfo_selected;
+      char hostname[128];
       char *regist_key;
       char *ostype;
       char auth[PS4APP_KEY_BYTES];
@@ -73,6 +77,7 @@ extern "C"
     void *event_cb_user;
 
     Ps4AppThread session_thread;
+    Ps4AppCtrl ctrl;
 
     Ps4AppLog log;
   } Ps4AppSession;
