@@ -5,6 +5,8 @@
 #include "thread.h"
 #include "log.h"
 #include "ctrl.h"
+#include "rpcrypt.h"
+
 
 #include <stdint.h>
 #include <Ws2tcpip.h>
@@ -53,8 +55,6 @@ extern "C"
   } Ps4AppEvent;
 
   typedef void (*Ps4AppEventCallback)(Ps4AppEvent *event, void *user);
-
-#define PS4APP_KEY_BYTES 0x10
 
   typedef struct ps4app_session_t
   {

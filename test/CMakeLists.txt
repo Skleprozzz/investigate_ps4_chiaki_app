@@ -4,7 +4,8 @@ target_include_directories(munit PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/munit")
 
 add_executable(ps4app-unit
 		main.c
-		http.c)
+		http.c
+		rpcrypt.c)
 
 
 

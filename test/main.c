@@ -1,26 +1,27 @@
 #include <munit.h>
 
-
 extern MunitTest tests_http[];
+extern MunitTest tests_rpcrypt[];
 
 static MunitSuite suites[] = {
-	{
-		"/http",
-		tests_http,
-		NULL,
-		1,
-		MUNIT_SUITE_OPTION_NONE
-	},
-	{ NULL, NULL, NULL, 0, MUNIT_SUITE_OPTION_NONE }
-};
+	{"/http",
+	 tests_http,
+	 NULL,
+	 1,
+	 MUNIT_SUITE_OPTION_NONE},
+	{"/rpcrypt",
+	 tests_rpcrypt,
+	 NULL,
+	 1,
+	 MUNIT_SUITE_OPTION_NONE},
+	{NULL, NULL, NULL, 0, MUNIT_SUITE_OPTION_NONE}};
 
 static const MunitSuite suite_main = {
 	"/ps4app",
 	NULL,
 	suites,
 	1,
-	MUNIT_SUITE_OPTION_NONE
-};
+	MUNIT_SUITE_OPTION_NONE};
 
 int main(int argc, char *argv[])
 {
