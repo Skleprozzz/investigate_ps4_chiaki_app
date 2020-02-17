@@ -38,7 +38,7 @@ static MunitResult test_http_response_parse(const MunitParameter params[],
   header = header->next;
   munit_assert_ptr_null(header);
 
-  ps4app_http_reponse_finish(&parsed_response);
+  ps4app_http_response_finish(&parsed_response);
   return MUNIT_OK;
 }
 

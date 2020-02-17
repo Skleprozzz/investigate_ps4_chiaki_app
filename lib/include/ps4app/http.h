@@ -26,7 +26,7 @@ extern "C"
 
     PS4APP_EXPORT void ps4app_http_header_free(Ps4AppHttpHeader *header);
     PS4APP_EXPORT Ps4AppErrorCode ps4app_http_header_parse(Ps4AppHttpHeader **header, char *buf, size_t buf_size);
-    PS4APP_EXPORT void ps4app_http_reponse_finish(Ps4AppHttpResponse *response);
+    PS4APP_EXPORT void ps4app_http_response_finish(Ps4AppHttpResponse *response);
     PS4APP_EXPORT Ps4AppErrorCode ps4app_http_response_parse(Ps4AppHttpResponse *response, char *buf, size_t buf_size);
     PS4APP_EXPORT Ps4AppErrorCode ps4app_recv_http_header(int sock, char *buf, size_t buf_size, size_t *header_size, size_t *received_size);
 
