@@ -4,6 +4,7 @@
 #include <openssl/evp.h>
 
 #include <string.h>
+#include <stdbool.h>
 
 PS4APP_EXPORT void ps4app_rpcrypt_bright_ambassador(uint8_t *bright, uint8_t *ambassador, const uint8_t *nonce, const uint8_t *morning)
 {
@@ -60,4 +61,90 @@ PS4APP_EXPORT Ps4AppErrorCode ps4app_rpcrypt_generate_iv(Ps4AppRPCrypt *rpcrypt,
 
 	memcpy(iv, hmac, PS4APP_KEY_BYTES);
 	return PS4APP_ERR_SUCCESS;
+}
+
+
+static Ps4AppErrorCode ps4app_rpcrypt_crypt(Ps4AppRPCrypt *rpcrypt, uint64_t counter, uint8_t *buf, size_t buf_size, bool encrypt)
+{
+	EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
+	if(!ctx)
+		return PS4APP_ERR_UNKNOWN;
+
+	uint8_t iv[PS4APP_KEY_BYTES];
+	Ps4AppErrorCode err = ps4app_rpcrypt_generate_iv(rpcrypt, iv, counter);
+	if(err != PS4APP_ERR_SUCCESS)
+		return err;
+
+#define FAIL(err) do { EVP_CIPHER_CTX_free(ctx); return (err); } while(0);
+
+	if(encrypt)
+	{
+		if(!EVP_EncryptInit_ex(ctx, EVP_aes_128_cfb128(), NULL, rpcrypt->bright, iv))
+			FAIL(PS4APP_ERR_UNKNOWN);
+	}
+	else
+	{
+		if(!EVP_DecryptInit_ex(ctx, EVP_aes_128_cfb128(), NULL, rpcrypt->bright, iv))
+			FAIL(PS4APP_ERR_UNKNOWN);
+	}
+
+	if(!EVP_CIPHER_CTX_set_padding(ctx, 0))
+		FAIL(PS4APP_ERR_UNKNOWN);
+
+	if(buf_size % PS4APP_KEY_BYTES)
+	{
+		size_t padded_size = ((buf_size + PS4APP_KEY_BYTES - 1) / PS4APP_KEY_BYTES) * PS4APP_KEY_BYTES;
+		uint8_t *tmp = malloc(padded_size);
+		if(!tmp)
+			FAIL(PS4APP_ERR_MEMORY);
+		memcpy(tmp, buf, buf_size);
+		memset(tmp + buf_size, 0, padded_size - buf_size);
+		int outl = (int)padded_size;
+
+		int success;
+		if(encrypt)
+			success = EVP_EncryptUpdate(ctx, tmp, &outl, tmp, outl);
+		else
+			success = EVP_DecryptUpdate(ctx, tmp, &outl, tmp, outl);
+
+		if(!success || outl != (int)padded_size)
+		{
+			free(tmp);
+			FAIL(PS4APP_ERR_UNKNOWN);
+		}
+
+		memcpy(buf, tmp, buf_size);
+		free(tmp);
+	}
+	else
+	{
+		int outl = (int)buf_size;
+		if(encrypt)
+		{
+			if(!EVP_EncryptUpdate(ctx, buf, &outl, buf, outl))
+				FAIL(PS4APP_ERR_UNKNOWN);
+		}
+		else
+		{
+			if(!EVP_DecryptUpdate(ctx, buf, &outl, buf, outl))
+				FAIL(PS4APP_ERR_UNKNOWN);
+		}
+
+		if(outl != (int)buf_size)
+			FAIL(PS4APP_ERR_UNKNOWN);
+	}
+
+#undef FAIL
+	EVP_CIPHER_CTX_free(ctx);
+	return PS4APP_ERR_SUCCESS;
+}
+
+PS4APP_EXPORT Ps4AppErrorCode ps4app_rpcrypt_encrypt(Ps4AppRPCrypt *rpcrypt, uint64_t counter, uint8_t *buf, size_t buf_size)
+{
+	return ps4app_rpcrypt_crypt(rpcrypt, counter, buf, buf_size, true);
+}
+
+PS4APP_EXPORT Ps4AppErrorCode ps4app_rpcrypt_decrypt(Ps4AppRPCrypt *rpcrypt, uint64_t counter, uint8_t *buf, size_t buf_size)
+{
+	return ps4app_rpcrypt_crypt(rpcrypt, counter, buf, buf_size, false);
 }
