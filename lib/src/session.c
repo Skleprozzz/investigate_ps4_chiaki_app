@@ -9,8 +9,8 @@
 #include <stdbool.h>
 #include <errno.h>
 
-#include <Ws2tcpip.h>
-#include <winsock.h>
+#include <stdint.h>
+#include <netdb.h>
 
 #define SESSION_PORT 9295
 

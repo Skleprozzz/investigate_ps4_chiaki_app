@@ -2,8 +2,8 @@
 
 #include <stdbool.h>
 #include <string.h>
-#include <Ws2tcpip.h>
-#include <winsock.h>
+#include <stdint.h>
+#include <netdb.h>
 
 
 PS4APP_EXPORT void ps4app_http_header_free(Ps4AppHttpHeader *header)

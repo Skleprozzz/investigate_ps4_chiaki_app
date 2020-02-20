@@ -1,4 +1,4 @@
-#include <ps4app\thread.h>
+#include <ps4app/thread.h>
 
 #include <stdio.h>
 

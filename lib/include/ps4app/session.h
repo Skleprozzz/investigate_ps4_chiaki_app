@@ -9,8 +9,8 @@
 
 
 #include <stdint.h>
-#include <Ws2tcpip.h>
-#include <winsock.h>
+#include <stdint.h>
+#include <netdb.h>
 
 #ifdef __cplusplus
 extern "C"
