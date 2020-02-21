@@ -13,6 +13,7 @@ extern "C"
     {
         struct ps4app_session_t *session;
         Ps4AppThread thread;
+        int sock;
     } Ps4AppCtrl;
 
     PS4APP_EXPORT Ps4AppErrorCode ps4app_ctrl_start(Ps4AppCtrl *ctrl, struct ps4app_session_t *session);

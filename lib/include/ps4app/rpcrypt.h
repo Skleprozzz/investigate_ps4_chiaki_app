@@ -17,7 +17,6 @@ extern "C"
     {
         uint8_t bright[PS4APP_KEY_BYTES];
         uint8_t ambassador[PS4APP_KEY_BYTES];
-        struct hmac_ctx_st *hmac_ctx;
     } Ps4AppRPCrypt;
 
     PS4APP_EXPORT void ps4app_rpcrypt_bright_ambassador(uint8_t *bright, uint8_t *ambassabor, const uint8_t *nonce, const uint8_t *morning);

@@ -48,7 +48,7 @@ PS4APP_EXPORT Ps4AppErrorCode ps4app_session_init(Ps4AppSession *session, Ps4App
 
 	memcpy(session->connect_info.auth, connect_info->auth, sizeof(session->connect_info.auth));
 	memcpy(session->connect_info.morning, connect_info->morning, sizeof(session->connect_info.morning));
-
+	memcpy(session->connect_info.did, connect_info->did, sizeof(session->connect_info.did));
 	return PS4APP_ERR_SUCCESS;
 }
 
@@ -91,6 +91,21 @@ static void *session_thread_func(void *arg)
 	if (!success)
 		goto quit;
 	PS4APP_LOGI(&session->log, "Session request successfull\n");
+
+	ps4app_rpcrypt_init(&session->rpcrypt, session->nonce, session->connect_info.morning);
+
+	usleep(10000);
+
+	PS4APP_LOGI(&session->log, "Starting ctrl\n");
+
+	Ps4AppErrorCode err = ps4app_ctrl_start(&session->ctrl, session);
+	if(err != PS4APP_ERR_SUCCESS)
+		goto quit;
+
+	ps4app_ctrl_join(&session->ctrl);
+
+	PS4APP_LOGI(&session->log, "Ctrl stopped\n");
+
 
 	Ps4AppEvent quit_event;
 quit:
@@ -229,7 +244,7 @@ static bool session_thread_request_session(Ps4AppSession *session)
 
 	size_t header_size;
 	size_t received_size;
-	Ps4AppErrorCode err = ps4app_recv_http_header(session_sock, buf, sizeof(buf), &header_size, &received_size);
+	Ps4AppErrorCode err = ps4app_recv_http_header(session_sock, buf, sizeof(buf)-1, &header_size, &received_size);
 	if (err != PS4APP_ERR_SUCCESS)
 	{
 		close(session_sock);

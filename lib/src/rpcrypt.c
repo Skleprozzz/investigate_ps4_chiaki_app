@@ -64,7 +64,7 @@ PS4APP_EXPORT Ps4AppErrorCode ps4app_rpcrypt_generate_iv(Ps4AppRPCrypt *rpcrypt,
 }
 
 
-static Ps4AppErrorCode ps4app_rpcrypt_crypt(Ps4AppRPCrypt *rpcrypt, uint64_t counter, uint8_t *buf, size_t buf_size, bool encrypt)
+static Ps4AppErrorCode ps4app_rpcrypt_crypt(Ps4AppRPCrypt *rpcrypt, uint64_t counter, uint8_t *in, uint8_t *out, size_t sz, bool encrypt)
 {
 	EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
 	if(!ctx)
@@ -91,60 +91,26 @@ static Ps4AppErrorCode ps4app_rpcrypt_crypt(Ps4AppRPCrypt *rpcrypt, uint64_t cou
 	if(!EVP_CIPHER_CTX_set_padding(ctx, 0))
 		FAIL(PS4APP_ERR_UNKNOWN);
 
-	if(buf_size % PS4APP_KEY_BYTES)
-	{
-		size_t padded_size = ((buf_size + PS4APP_KEY_BYTES - 1) / PS4APP_KEY_BYTES) * PS4APP_KEY_BYTES;
-		uint8_t *tmp = malloc(padded_size);
-		if(!tmp)
-			FAIL(PS4APP_ERR_MEMORY);
-		memcpy(tmp, buf, buf_size);
-		memset(tmp + buf_size, 0, padded_size - buf_size);
-		int outl = (int)padded_size;
+		int outl;
 
-		int success;
-		if(encrypt)
-			success = EVP_EncryptUpdate(ctx, tmp, &outl, tmp, outl);
-		else
-			success = EVP_DecryptUpdate(ctx, tmp, &outl, tmp, outl);
-
-		if(!success || outl != (int)padded_size)
+		if (encrypt)
 		{
-			free(tmp);
-			FAIL(PS4APP_ERR_UNKNOWN);
+			if (!EVP_DecryptUpdate(ctx, out, &outl, in, (int)sz)) FAIL(PS4APP_ERR_UNKNOWN);
 		}
-
-		memcpy(buf, tmp, buf_size);
-		free(tmp);
-	}
-	else
-	{
-		int outl = (int)buf_size;
-		if(encrypt)
-		{
-			if(!EVP_EncryptUpdate(ctx, buf, &outl, buf, outl))
-				FAIL(PS4APP_ERR_UNKNOWN);
-		}
-		else
-		{
-			if(!EVP_DecryptUpdate(ctx, buf, &outl, buf, outl))
-				FAIL(PS4APP_ERR_UNKNOWN);
-		}
-
-		if(outl != (int)buf_size)
-			FAIL(PS4APP_ERR_UNKNOWN);
-	}
+		if (outl != (int)sz)
+		FAIL(PS4APP_ERR_UNKNOWN);
 
 #undef FAIL
 	EVP_CIPHER_CTX_free(ctx);
 	return PS4APP_ERR_SUCCESS;
 }
 
-PS4APP_EXPORT Ps4AppErrorCode ps4app_rpcrypt_encrypt(Ps4AppRPCrypt *rpcrypt, uint64_t counter, uint8_t *buf, size_t buf_size)
+PS4APP_EXPORT Ps4AppErrorCode ps4app_rpcrypt_encrypt(Ps4AppRPCrypt *rpcrypt, uint64_t counter, uint8_t *in, uint8_t *out, size_t sz)
 {
-	return ps4app_rpcrypt_crypt(rpcrypt, counter, buf, buf_size, true);
+	return ps4app_rpcrypt_crypt(rpcrypt, counter, in, out, sz, true);
 }
 
-PS4APP_EXPORT Ps4AppErrorCode ps4app_rpcrypt_decrypt(Ps4AppRPCrypt *rpcrypt, uint64_t counter, uint8_t *buf, size_t buf_size)
+PS4APP_EXPORT Ps4AppErrorCode ps4app_rpcrypt_decrypt(Ps4AppRPCrypt *rpcrypt, uint64_t counter, uint8_t *in, uint8_t *out, size_t sz)
 {
-	return ps4app_rpcrypt_crypt(rpcrypt, counter, buf, buf_size, false);
+	return ps4app_rpcrypt_crypt(rpcrypt, counter, in, out, sz, false);
 }

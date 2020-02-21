@@ -17,13 +17,16 @@ extern "C"
 {
 #endif
 
+
+#define PS4APP_RP_DID_SIZE 32
+
   typedef struct ps4app_connect_info_t
   {
-    const char *host;
-    const char *regist_key;
-    const char *ostype;
-    char auth[0x10];
-    uint8_t morning[0x10];
+    const char *host;// null terminated
+    const char *regist_key;// null terminated
+    const char *ostype;// null terminated
+    char auth[0x10];// null terminated
+    uint8_t morning[0x10];  // must be completely filled (pad with \0)
   } Ps4AppConnectInfo;
   typedef enum
   {
@@ -67,9 +70,11 @@ extern "C"
       char *ostype;
       char auth[PS4APP_KEY_BYTES];
       uint8_t morning[PS4APP_KEY_BYTES];
+      uint8_t did[PS4APP_RP_DID_SIZE];
     } connect_info;
 
     uint8_t nonce[PS4APP_KEY_BYTES];
+    Ps4AppRPCrypt rpcrypt;
 
     Ps4AppQuitReason quit_reason;
 
@@ -94,6 +99,12 @@ extern "C"
     session->event_cb = cb;
     session->event_cb_user = user;
   }
+
+static inline void ps4app_session_set_quit_reason(Ps4AppSession *session, Ps4AppQuitReason reason){
+  if (session->quit_reason != PS4APP_QUIT_REASON_NONE)
+  return;
+  session->quit_reason = reason;
+}
 
 #ifdef __cplusplus
 }
