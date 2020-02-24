@@ -27,6 +27,7 @@ extern "C"
     const char *ostype;// null terminated
     char auth[0x10];// null terminated
     uint8_t morning[0x10];  // must be completely filled (pad with \0)
+    uint8_t did[PS4APP_RP_DID_SIZE];
   } Ps4AppConnectInfo;
   typedef enum
   {
