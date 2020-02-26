@@ -1,25 +1,35 @@
+/*
+ * This file is part of Ps4App.
+ *
+ * Ps4App is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Ps4App is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Ps4App.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include <ps4app/rpcrypt.h>
 
-#include <openssl/evp.h>
 #include <openssl/hmac.h>
+#include <openssl/evp.h>
 
-
-#include <stdbool.h>
 #include <string.h>
+#include <stdbool.h>
 
+PS4APP_EXPORT void ps4app_rpcrypt_bright_ambassador(uint8_t *bright, uint8_t *ambassador, const uint8_t *nonce, const uint8_t *morning)
+{
+  static const uint8_t echo_a[] = {0x01, 0x49, 0x87, 0x9b, 0x65, 0x39, 0x8b, 0x39, 0x4b, 0x3a, 0x8d, 0x48, 0xc3, 0x0a, 0xef, 0x51};
+  static const uint8_t echo_b[] = {0xe1, 0xec, 0x9c, 0x3a, 0xdd, 0xbd, 0x08, 0x85, 0xfc, 0x0e, 0x1d, 0x78, 0x90, 0x32, 0xc0, 0x04};
 
-PS4APP_EXPORT void ps4app_rpcrypt_bright_ambassador(uint8_t *bright,
-                                                    uint8_t *ambassador,
-                                                    const uint8_t *nonce,
-                                                    const uint8_t *morning) {
-  static const uint8_t echo_a[] = {0x01, 0x49, 0x87, 0x9b, 0x65, 0x39,
-                                   0x8b, 0x39, 0x4b, 0x3a, 0x8d, 0x48,
-                                   0xc3, 0x0a, 0xef, 0x51};
-  static const uint8_t echo_b[] = {0xe1, 0xec, 0x9c, 0x3a, 0xdd, 0xbd,
-                                   0x08, 0x85, 0xfc, 0x0e, 0x1d, 0x78,
-                                   0x90, 0x32, 0xc0, 0x04};
-
-  for (uint8_t i = 0; i < PS4APP_KEY_BYTES; i++) {
+  for (uint8_t i = 0; i < PS4APP_KEY_BYTES; i++)
+  {
     uint8_t v = nonce[i];
     v -= i;
     v -= 0x27;
@@ -27,7 +37,8 @@ PS4APP_EXPORT void ps4app_rpcrypt_bright_ambassador(uint8_t *bright,
     ambassador[i] = v;
   }
 
-  for (uint8_t i = 0; i < PS4APP_KEY_BYTES; i++) {
+  for (uint8_t i = 0; i < PS4APP_KEY_BYTES; i++)
+  {
     uint8_t v = morning[i];
     v -= i;
     v += 0x34;
@@ -37,18 +48,14 @@ PS4APP_EXPORT void ps4app_rpcrypt_bright_ambassador(uint8_t *bright,
   }
 }
 
-PS4APP_EXPORT void ps4app_rpcrypt_init(Ps4AppRPCrypt *rpcrypt,
-                                       const uint8_t *nonce,
-                                       const uint8_t *morning) {
-  ps4app_rpcrypt_bright_ambassador(rpcrypt->bright, rpcrypt->ambassador, nonce,
-                                   morning);
+PS4APP_EXPORT void ps4app_rpcrypt_init(Ps4AppRPCrypt *rpcrypt, const uint8_t *nonce, const uint8_t *morning)
+{
+  ps4app_rpcrypt_bright_ambassador(rpcrypt->bright, rpcrypt->ambassador, nonce, morning);
 }
 
-PS4APP_EXPORT Ps4AppErrorCode ps4app_rpcrypt_generate_iv(Ps4AppRPCrypt *rpcrypt,
-                                                         uint8_t *iv,
-                                                         uint64_t counter) {
-  uint8_t hmac_key[] = {0xac, 0x07, 0x88, 0x83, 0xc8, 0x3a, 0x1f, 0xe8,
-                        0x11, 0x46, 0x3a, 0xf3, 0x9e, 0xe3, 0xe3, 0x77};
+PS4APP_EXPORT Ps4AppErrorCode ps4app_rpcrypt_generate_iv(Ps4AppRPCrypt *rpcrypt, uint8_t *iv, uint64_t counter)
+{
+  uint8_t hmac_key[] = {0xac, 0x07, 0x88, 0x83, 0xc8, 0x3a, 0x1f, 0xe8, 0x11, 0x46, 0x3a, 0xf3, 0x9e, 0xe3, 0xe3, 0x77};
 
   uint8_t buf[PS4APP_KEY_BYTES + 8];
   memcpy(buf, rpcrypt->ambassador, PS4APP_KEY_BYTES);
@@ -63,8 +70,7 @@ PS4APP_EXPORT Ps4AppErrorCode ps4app_rpcrypt_generate_iv(Ps4AppRPCrypt *rpcrypt,
 
   uint8_t hmac[32];
   unsigned int hmac_len = 0;
-  if (!HMAC(EVP_sha256(), hmac_key, PS4APP_KEY_BYTES, buf, sizeof(buf), hmac,
-            &hmac_len))
+  if (!HMAC(EVP_sha256(), hmac_key, PS4APP_KEY_BYTES, buf, sizeof(buf), hmac, &hmac_len))
     return PS4APP_ERR_UNKNOWN;
 
   if (hmac_len < PS4APP_KEY_BYTES)
@@ -74,10 +80,8 @@ PS4APP_EXPORT Ps4AppErrorCode ps4app_rpcrypt_generate_iv(Ps4AppRPCrypt *rpcrypt,
   return PS4APP_ERR_SUCCESS;
 }
 
-static Ps4AppErrorCode ps4app_rpcrypt_crypt(Ps4AppRPCrypt *rpcrypt,
-                                            uint64_t counter, uint8_t *in,
-                                            uint8_t *out, size_t sz,
-                                            bool encrypt) {
+static Ps4AppErrorCode ps4app_rpcrypt_crypt(Ps4AppRPCrypt *rpcrypt, uint64_t counter, uint8_t *in, uint8_t *out, size_t sz, bool encrypt)
+{
   EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
   if (!ctx)
     return PS4APP_ERR_UNKNOWN;
@@ -87,19 +91,21 @@ static Ps4AppErrorCode ps4app_rpcrypt_crypt(Ps4AppRPCrypt *rpcrypt,
   if (err != PS4APP_ERR_SUCCESS)
     return err;
 
-#define FAIL(err)                                                              \
-  do {                                                                         \
-    EVP_CIPHER_CTX_free(ctx);                                                  \
-    return (err);                                                              \
+#define FAIL(err)             \
+  do                          \
+  {                           \
+    EVP_CIPHER_CTX_free(ctx); \
+    return (err);             \
   } while (0);
 
-  if (encrypt) {
-    if (!EVP_EncryptInit_ex(ctx, EVP_aes_128_cfb128(), NULL, rpcrypt->bright,
-                            iv))
+  if (encrypt)
+  {
+    if (!EVP_EncryptInit_ex(ctx, EVP_aes_128_cfb128(), NULL, rpcrypt->bright, iv))
       FAIL(PS4APP_ERR_UNKNOWN);
-  } else {
-    if (!EVP_DecryptInit_ex(ctx, EVP_aes_128_cfb128(), NULL, rpcrypt->bright,
-                            iv))
+  }
+  else
+  {
+    if (!EVP_DecryptInit_ex(ctx, EVP_aes_128_cfb128(), NULL, rpcrypt->bright, iv))
       FAIL(PS4APP_ERR_UNKNOWN);
   }
 
@@ -107,11 +113,17 @@ static Ps4AppErrorCode ps4app_rpcrypt_crypt(Ps4AppRPCrypt *rpcrypt,
     FAIL(PS4APP_ERR_UNKNOWN);
 
   int outl;
-
-  if (encrypt) {
+  if (encrypt)
+  {
+    if (!EVP_EncryptUpdate(ctx, out, &outl, in, (int)sz))
+      FAIL(PS4APP_ERR_UNKNOWN);
+  }
+  else
+  {
     if (!EVP_DecryptUpdate(ctx, out, &outl, in, (int)sz))
       FAIL(PS4APP_ERR_UNKNOWN);
   }
+
   if (outl != (int)sz)
     FAIL(PS4APP_ERR_UNKNOWN);
 
@@ -120,16 +132,12 @@ static Ps4AppErrorCode ps4app_rpcrypt_crypt(Ps4AppRPCrypt *rpcrypt,
   return PS4APP_ERR_SUCCESS;
 }
 
-PS4APP_EXPORT Ps4AppErrorCode ps4app_rpcrypt_encrypt(Ps4AppRPCrypt *rpcrypt,
-                                                     uint64_t counter,
-                                                     uint8_t *in, uint8_t *out,
-                                                     size_t sz) {
+PS4APP_EXPORT Ps4AppErrorCode ps4app_rpcrypt_encrypt(Ps4AppRPCrypt *rpcrypt, uint64_t counter, uint8_t *in, uint8_t *out, size_t sz)
+{
   return ps4app_rpcrypt_crypt(rpcrypt, counter, in, out, sz, true);
 }
 
-PS4APP_EXPORT Ps4AppErrorCode ps4app_rpcrypt_decrypt(Ps4AppRPCrypt *rpcrypt,
-                                                     uint64_t counter,
-                                                     uint8_t *in, uint8_t *out,
-                                                     size_t sz) {
+PS4APP_EXPORT Ps4AppErrorCode ps4app_rpcrypt_decrypt(Ps4AppRPCrypt *rpcrypt, uint64_t counter, uint8_t *in, uint8_t *out, size_t sz)
+{
   return ps4app_rpcrypt_crypt(rpcrypt, counter, in, out, sz, false);
 }

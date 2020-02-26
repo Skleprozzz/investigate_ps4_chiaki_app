@@ -89,12 +89,55 @@ static Ps4AppErrorCode ctrl_thread_connect(Ps4AppCtrl *ctrl)
 	if (sock < 0)
 	{
 		PS4APP_LOGE(&session->log, "Session ctrl socket creation failed.\n");
-		if (session->quit_reason == PS4APP_QUIT_REASON_NONE)
-			session->quit_reason = PS4APP_QUIT_REASON_CTRL_UNKNOWN;
+		ps4app_session_set_quit_reason(session, PS4APP_QUIT_REASON_CTRL_UNKNOWN);
+		return PS4APP_ERR_NETWORK;
+	}
+
+	int r = connect(sock, sa, addr->ai_addrlen);
+	free(sa);
+	if (r < 0)
+	{
+		int errsv = errno;
+		PS4APP_LOGE(&session->log, "Ctrl connect failed: %s\n", strerror(errsv));
+		if (errsv == ECONNREFUSED)
+			session->quit_reason = PS4APP_QUIT_REASON_SESSION_REQUEST_CONNECTION_REFUSED;
+		else
+			session->quit_reason = PS4APP_QUIT_REASON_NONE;
+		close(sock);
 		return PS4APP_ERR_NETWORK;
 	}
 
 	PS4APP_LOGI(&session->log, "Connected to %s:%d\n", session->connect_info.hostname, SESSION_CTRL_PORT);
+
+	uint8_t auth_enc[PS4APP_KEY_BYTES];
+	Ps4AppErrorCode err = ps4app_rpcrypt_encrypt(&session->rpcrypt, 0, (uint8_t *)session->connect_info.auth, auth_enc, PS4APP_KEY_BYTES);
+	if (err != PS4APP_ERR_SUCCESS)
+		goto error;
+	char auth_b64[PS4APP_KEY_BYTES * 2];
+	err = ps4app_base64_encode(auth_enc, sizeof(auth_enc), auth_b64, sizeof(auth_b64));
+	if (err != PS4APP_ERR_SUCCESS)
+		goto error;
+
+	uint8_t did_enc[PS4APP_RP_DID_SIZE];
+	err = ps4app_rpcrypt_encrypt(&session->rpcrypt, 1, (uint8_t *)session->connect_info.did, did_enc, PS4APP_RP_DID_SIZE);
+	if (err != PS4APP_ERR_SUCCESS)
+		goto error;
+	char did_b64[PS4APP_RP_DID_SIZE * 2];
+	err = ps4app_base64_encode(did_enc, sizeof(did_enc), did_b64, sizeof(did_b64));
+	if (err != PS4APP_ERR_SUCCESS)
+		goto error;
+
+	uint8_t ostype_enc[128];
+	size_t ostype_len = strlen(session->connect_info.ostype) + 1;
+	if (ostype_len > sizeof(ostype_enc))
+		goto error;
+	err = ps4app_rpcrypt_encrypt(&session->rpcrypt, 2, (uint8_t *)session->connect_info.ostype, ostype_enc, ostype_len);
+	if (err != PS4APP_ERR_SUCCESS)
+		goto error;
+	char ostype_b64[256];
+	err = ps4app_base64_encode(ostype_enc, ostype_len, ostype_b64, sizeof(ostype_b64));
+	if (err != PS4APP_ERR_SUCCESS)
+		goto error;
 
 	static const char request_fmt[] =
 		"GET /sce/rp/session/ctrl HTTP/1.1\r\n"
@@ -110,6 +153,65 @@ static Ps4AppErrorCode ctrl_thread_connect(Ps4AppCtrl *ctrl)
 		"RP-OSType: %s\r\n"
 		"RP-ConPath: 1\r\n\r\n";
 
-	close(sock);
+	char buf[512];
+	int request_len = snprintf(buf, sizeof(buf), request_fmt,
+							   session->connect_info.hostname, SESSION_CTRL_PORT, auth_b64, did_b64, ostype_b64);
+	if (request_len < 0 || request_len >= sizeof(buf))
+		goto error;
+
+	PS4APP_LOGI(&session->log, "Sending ctrl request\n");
+
+	ssize_t sent = send(sock, buf, (size_t)request_len, 0);
+	if (sent < 0)
+	{
+		PS4APP_LOGE(&session->log, "Failed to send ctrl request\n");
+		goto error;
+	}
+
+	size_t header_size;
+	size_t received_size;
+	err = ps4app_recv_http_header(sock, buf, sizeof(buf) - 1, &header_size, &received_size);
+	if (err != PS4APP_ERR_SUCCESS)
+	{
+		PS4APP_LOGE(&session->log, "Failed to receive ctrl request response\n");
+		goto error;
+	}
+
+	buf[received_size] = '\0';
+
+	Ps4AppHttpResponse http_response;
+	err = ps4app_http_response_parse(&http_response, buf, header_size);
+	if (err != PS4APP_ERR_SUCCESS)
+	{
+		PS4APP_LOGE(&session->log, "Failed to parse ctrl request response\n");
+		goto error;
+	}
+
+	CtrlResponse response;
+	parse_ctrl_response(&response, &http_response);
+	ps4app_http_response_finish(&http_response);
+
+	if (!response.success)
+	{
+		err = PS4APP_ERR_UNKNOWN;
+		goto error;
+	}
+
+	if (response.server_type_valid)
+	{
+		Ps4AppErrorCode err2 = ps4app_rpcrypt_decrypt(&session->rpcrypt, 0, response.rp_server_type, response.rp_server_type, sizeof(response.rp_server_type));
+		response.server_type_valid = err2 == PS4APP_ERR_SUCCESS;
+	}
+
+	if (!response.server_type_valid)
+		PS4APP_LOGE(&session->log, "No valid Server Type in ctrl response\n");
+
+	ctrl->sock = sock;
+	close(sock); // TODO: remove
 	return PS4APP_ERR_SUCCESS;
+
+error:
+
+	close(sock);
+	return err;
 }

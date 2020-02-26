@@ -25,3 +25,6 @@ target_include_directories(ps4app-lib PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/includ
 
 find_package(Threads)
 target_link_libraries(ps4app-lib Threads::Threads)
+
+find_package(OpenSSL REQUIRED)
+target_link_libraries(ps4app-lib OpenSSL::Crypto)

@@ -25,22 +25,20 @@ int main(int argc, const char *argv[])
 		memset(connect_info.auth + auth_len, 0, sizeof(connect_info.auth) - auth_len);
 
 	size_t morning_size = sizeof(connect_info.morning);
-	bool r = ps4app_base64_decode(argv[5], strlen(argv[5]), connect_info.morning, &morning_size);
-	if (!r || morning_size != sizeof(connect_info.morning))
+	Ps4AppErrorCode err = ps4app_base64_decode(argv[5], strlen(argv[5]), connect_info.morning, &morning_size);
+	if (!err || morning_size != sizeof(connect_info.morning))
 	{
 		printf("morning invalid.\n");
 		return 1;
 	}
 
-
-	// size_t did_size = sizeof(connect_info.did);
-	// err = ps4app_base64_decode(argv[6], strlen(argv[6]), connect_info.did, &did_size);
-	// if(err != PS4APP_ERR_SUCCESS || did_size != sizeof(connect_info.did))
-	// {
-	// 	printf("did invalid.\n");
-	// 	return 1;
-	// }
-
+	size_t did_size = sizeof(connect_info.did);
+	err = ps4app_base64_decode(argv[6], strlen(argv[6]), connect_info.did, &did_size);
+	if(err != PS4APP_ERR_SUCCESS || did_size != sizeof(connect_info.did))
+	{
+		printf("did invalid.\n");
+		return 1;
+	}
 
 	Ps4AppSession session;
 	ps4app_session_init(&session, &connect_info);
