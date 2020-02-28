@@ -149,8 +149,10 @@ PS4APP_EXPORT Ps4AppErrorCode ps4app_recv_http_header(int sock, char *buf, size_
 					nl_state = 0;
 					break;
 			}
-			if(nl_state == 4)
+			if(nl_state == 4){
+				received--;
 				break;
+			}
 		}
 
 		if(nl_state == 4)
