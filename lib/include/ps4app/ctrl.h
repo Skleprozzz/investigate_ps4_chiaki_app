@@ -18,6 +18,7 @@ extern "C"
         int sock;
         uint8_t recv_buf[512];
         size_t recv_buf_size;
+        uint64_t crypt_counter_remote;
     } Ps4AppCtrl;
 
     PS4APP_EXPORT Ps4AppErrorCode ps4app_ctrl_start(Ps4AppCtrl *ctrl, struct ps4app_session_t *session);

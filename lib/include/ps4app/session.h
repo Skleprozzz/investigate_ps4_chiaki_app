@@ -19,6 +19,7 @@ extern "C"
 
 
 #define PS4APP_RP_DID_SIZE 32
+#define PS4APP_SESSION_ID_SIZE_MAX 80
 
   typedef struct ps4app_connect_info_t
   {
@@ -76,6 +77,7 @@ extern "C"
 
     uint8_t nonce[PS4APP_KEY_BYTES];
     Ps4AppRPCrypt rpcrypt;
+    char session_id[PS4APP_SESSION_ID_SIZE_MAX];
 
     Ps4AppQuitReason quit_reason;
 

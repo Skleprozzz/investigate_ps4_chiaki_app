@@ -11,6 +11,11 @@
 
 #define SESSION_CTRL_PORT 9295
 
+typedef enum ctrl_message_type_t
+{
+	CTRL_MESSAGE_TYPE_SESSION_ID = 0X33
+} CtrlMessageType;
+
 static void *ctrl_thread_func(void *user);
 
 PS4APP_EXPORT Ps4AppErrorCode ps4app_ctrl_start(Ps4AppCtrl *ctrl, Ps4AppSession *session)
@@ -87,9 +92,64 @@ static void *ctrl_thread_func(void *user)
 	return NULL;
 }
 
+static void ctrl_message_received_session_id(Ps4AppCtrl *ctrl, uint8_t *payload, size_t payload_size);
+
 static void ctrl_message_received(Ps4AppCtrl *ctrl, uint16_t msg_type, uint8_t *payload, size_t payload_size)
 {
-	PS4APP_LOGI(&ctrl->session->log, "Received Ctrl Message Type %#x\n", msg_type);
+	if (payload_size > 0)
+	{
+		Ps4AppErrorCode err = ps4app_rpcrypt_decrypt(&ctrl->session->rpcrypt, ctrl->crypt_counter_remote++, payload, payload, payload_size);
+		if (err != PS4APP_ERR_SUCCESS)
+		{
+			PS4APP_LOGE(&ctrl->session->log, "Failed to decrypt payload for Ctrl Message type %#x\n", msg_type);
+			return;
+		}
+
+		switch (msg_type)
+		{
+		case CTRL_MESSAGE_TYPE_SESSION_ID:
+			ctrl_message_received_session_id(ctrl, payload, payload_size);
+			break;
+
+		default:
+			PS4APP_LOGW(&ctrl->session->log, "Received Ctrl Message with unknown type %#x\n", msg_type);
+			break;
+		}
+	}
+}
+
+static void ctrl_message_received_session_id(Ps4AppCtrl *ctrl, uint8_t *payload, size_t payload_size)
+{
+	if (payload_size < 2 || (char)payload[0] != 'J')
+	{
+		PS4APP_LOGE(&ctrl->session->log, "Invalid Session Id received\n");
+		return;
+	}
+	// skip the 'J'
+	payload++;
+	payload_size++;
+
+	if (payload_size >= PS4APP_SESSION_ID_SIZE_MAX - 1)
+	{
+		PS4APP_LOGE(&ctrl->session->log, "Received Session Id is too long\n");
+		return;
+	}
+
+	for (uint8_t *cur = payload; cur < payload + payload_size; cur++)
+	{
+		char c = *cur;
+		if (c >= 'a' && c <= 'z')
+			continue;
+		if (c >= 'A' && c <= 'Z')
+			continue;
+		if (c >= '0' && c <= '9')
+			continue;
+		PS4APP_LOGE(&ctrl->session->log, "Received Session Id contains invalid characters\n");
+		return;
+	}
+	memcpy(ctrl->session->session_id, payload, payload_size);
+	ctrl->session->session_id[payload_size] = '\0';
+	PS4APP_LOGI(&ctrl->session->log, "Received valid Session Id: %s\n", ctrl->session->session_id);
 }
 
 typedef struct ctrl_response_t
@@ -147,6 +207,7 @@ static void parse_ctrl_response(CtrlResponse *response, Ps4AppHttpResponse *http
 
 static Ps4AppErrorCode ctrl_connect(Ps4AppCtrl *ctrl)
 {
+	ctrl->crypt_counter_remote = 0;
 	Ps4AppSession *session = ctrl->session;
 	struct addrinfo *addr = session->connect_info.host_addrinfo_selected;
 	struct sockaddr *sa = malloc(addr->ai_addrlen);
@@ -275,7 +336,7 @@ static Ps4AppErrorCode ctrl_connect(Ps4AppCtrl *ctrl)
 
 	if (response.server_type_valid)
 	{
-		Ps4AppErrorCode err2 = ps4app_rpcrypt_decrypt(&session->rpcrypt, 0, response.rp_server_type, response.rp_server_type, sizeof(response.rp_server_type));
+		Ps4AppErrorCode err2 = ps4app_rpcrypt_decrypt(&session->rpcrypt, ctrl->crypt_counter_remote++, response.rp_server_type, response.rp_server_type, sizeof(response.rp_server_type));
 		response.server_type_valid = err2 == PS4APP_ERR_SUCCESS;
 	}
 
